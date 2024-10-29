@@ -7,7 +7,7 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 from torch.cuda.amp import GradScaler, autocast
-from torch.optim import AdamW
+from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torchvision.datasets import *
@@ -64,7 +64,7 @@ def test(dataloader, model, loss_fn, device):
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
-            acc1, acc5 = compute_accuracy(pred, y, topk=(1, 5))
+            acc1, acc5 = compute_accuracy(pred, y, topk=(1, 4))
             top1_acc += acc1 * X.shape[0]
             top5_acc += acc5 * X.shape[0]
 
@@ -105,9 +105,11 @@ def main(cfg: argparse.Namespace):
     model = model.to(device)
     train_loss_fn = LabelSmoothCrossEntropy(smoothing=0.1)
     val_loss_fn = CrossEntropyLoss()
-    optimizer = AdamW(
-        model.parameters(), cfg.LR, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-2
-    )
+    # optimizer = AdamW(
+    #     model.parameters(), cfg.LR, betas=(0.9, 0.999), eps=1e-8, weight_decay=1e-2
+    # )
+
+    optimizer = Adam(model.parameters(), cfg.LR)
     # scheduler = StepLR(optimizer, step_size=cfg.STEP_SIZE, gamma=cfg.GAMMA)
     scheduler = CosineAnnealingLR(
         optimizer,
