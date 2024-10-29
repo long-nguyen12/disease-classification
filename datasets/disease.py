@@ -29,22 +29,27 @@ class DiseaseDataloader(Dataset):
         if not os.path.exists(self.root):
             raise ValueError(f"Data directory {self.root} does not exist.")
 
-        self.dataset = datasets.ImageFolder(root=self.root, transform=self.transform)
+        self.train_dataset = datasets.ImageFolder(
+            root=os.path.join(self.root, "training"), transform=self.transform
+        )
+        self.val_dataset = datasets.ImageFolder(
+            root=os.path.join(self.root, "testing"), transform=self.transform
+        )
 
     def get_data_loaders(self, train_val_split):
-        train_size = int(train_val_split * len(self.dataset))
-        val_size = len(self.dataset) - train_size
+        # train_size = int(train_val_split * len(self.dataset))
+        # val_size = len(self.dataset) - train_size
 
-        train_dataset, val_dataset = random_split(self.dataset, [train_size, val_size])
+        # train_dataset, val_dataset = random_split(self.dataset, [train_size, val_size])
 
         train_loader = DataLoader(
-            train_dataset,
+            self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
         )
         val_loader = DataLoader(
-            val_dataset,
+            self.val_dataset,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
