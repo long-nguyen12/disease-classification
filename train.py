@@ -37,7 +37,7 @@ def train(dataloader, model, loss_fn, optimizer, scheduler, scaler, device, epoc
 
     for X, y in dataloader:
         X, y = X.to(device), y.to(device)
-
+        loss = 0.0
         with autocast(enabled=cfg.AMP):
             preds = model(X)
             for pred in preds:
@@ -64,7 +64,7 @@ def test(dataloader, model, loss_fn, device):
     top1_acc_2 = 0
     top1_acc_3 = 0
     top1_acc_4 = 0
-    
+
     with torch.no_grad():
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
@@ -74,27 +74,27 @@ def test(dataloader, model, loss_fn, device):
                 acc1, acc5 = compute_accuracy(pred, y, topk=(1, 4))
                 top1_acc += acc1 * X.shape[0]
                 top5_acc += acc5 * X.shape[0]
-    
-                if i + 1 == 1: top1_acc_1 = acc1 * X.shape[0]
-                if i + 1 == 2: top1_acc_2 = acc1 * X.shape[0]
-                if i + 1 == 3: top1_acc_3 = acc1 * X.shape[0]
-                if i + 1 == 4: top1_acc_4 = acc1 * X.shape[0]
+
+                if i + 1 == 1:
+                    top1_acc_1 = acc1 * X.shape[0]
+                if i + 1 == 2:
+                    top1_acc_2 = acc1 * X.shape[0]
+                if i + 1 == 3:
+                    top1_acc_3 = acc1 * X.shape[0]
+                if i + 1 == 4:
+                    top1_acc_4 = acc1 * X.shape[0]
 
     test_loss /= num_batches
     # top1_acc /= size
     # top5_acc /= size
-    
+
     top1_acc_1 /= size
     top1_acc_2 /= size
     top1_acc_3 /= size
     top1_acc_4 /= size
-    
+
     console.print(
-        f"\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],
-        \n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],
-        \n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],
-        \n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],
-        \tAvg Loss: [blue]{test_loss:>8f}[/blue]"
+        f"\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
     )
     return top1_acc_4, top5_acc
 
