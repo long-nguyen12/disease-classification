@@ -257,3 +257,5 @@ fabric.properties
 
 *.tar
 *.pth
+
+configs/finetune.yaml
