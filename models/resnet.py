@@ -186,12 +186,8 @@ class ResNet(nn.Module):
         outs.append(self.classifiers[2](x))
         x = self.layer4(x)
         outs.append(self.classifiers[3](x))
-
-        # x = self.avgpool(x)
-        # x = x.flatten(1)
-        # x = self.fc(x)
-
-        return x
+        
+        return outs
 
 
 class ClassifierModule(nn.Module):
