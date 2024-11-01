@@ -120,11 +120,13 @@ class ResNet(nn.Module):
         self.classifiers = nn.ModuleList([])
         for i, embed_dim in enumerate(embed_dims):
             self.classifiers.append(
-                ClassifierModule(classifier_blocks[i], embed_dim * block.expansion, num_classes)
+                ClassifierModule(
+                    classifier_blocks[i], embed_dim * block.expansion, num_classes
+                )
             )
 
-        # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        # self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         self._init_weights(pretrained)
 
@@ -179,19 +181,14 @@ class ResNet(nn.Module):
         outs = []
         x = self.maxpool(self.relu(self.bn1(self.conv1(x))))
         x = self.layer1(x)
-        # outs.append(self.classifiers[0](x))
+        outs.append(self.classifiers[0](x))
         x = self.layer2(x)
-        # outs.append(self.classifiers[1](x))
+        outs.append(self.classifiers[1](x))
         x = self.layer3(x)
-        # outs.append(self.classifiers[2](x))
+        outs.append(self.classifiers[2](x))
         x = self.layer4(x)
-        # outs.append(self.classifiers[3](x))
-        
-        x = self.avgpool(x)
-        x = x.flatten(1)
-        x = self.fc(x)
-        outs.append(x)
-        
+        outs.append(self.classifiers[3](x))
+
         return outs
 
 
@@ -204,7 +201,7 @@ class ClassifierModule(nn.Module):
             attentions.append(ECA(channel))
 
         self.attentions = nn.ModuleList(attentions)
-        
+
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(channel, num_classes)
 

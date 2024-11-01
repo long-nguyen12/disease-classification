@@ -10,12 +10,21 @@ from .convnext import ConvNeXt, convnext_settings
 from .uniformer import UniFormer, uniformer_settings
 from .van import VAN, van_settings
 from .focalnet import FocalNet, focalnet_settings
+from .res2net import Res2Net
 
 
 __all__ = [
-    'ResNet', 'MicroNet', 'ConvNeXt', 'VAN',
-    'PVTv2', 'ResT',
-    'CSWin', 
-    'WaveMLP',
-    'PoolFormer', 'PatchConvnet', 'UniFormer', 'FocalNet',
+    "ResNet",
+    "MicroNet",
+    "ConvNeXt",
+    "VAN",
+    "PVTv2",
+    "ResT",
+    "CSWin",
+    "WaveMLP",
+    "PoolFormer",
+    "PatchConvnet",
+    "UniFormer",
+    "FocalNet",
+    "Res2Net",
 ]
