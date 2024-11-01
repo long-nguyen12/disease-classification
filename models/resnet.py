@@ -1,13 +1,20 @@
-import torch 
+import torch
 import torch.nn as nn
 from torch import Tensor
 from typing import Type, Optional, Union
+from models.modules.common import ECA
 
 
 class BasicBlock(nn.Module):
     expansion: int = 1
 
-    def __init__(self, in_ch: int, out_ch: int, s: int = 1, downsample: Optional[nn.Module] = None) -> None:
+    def __init__(
+        self,
+        in_ch: int,
+        out_ch: int,
+        s: int = 1,
+        downsample: Optional[nn.Module] = None,
+    ) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch, out_ch, 3, s, 1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_ch)
@@ -35,9 +42,15 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion: int = 4
 
-    def __init__(self, in_ch: int, out_ch: int, s: int = 1, downsample: Optional[nn.Module] = None) -> None:
+    def __init__(
+        self,
+        in_ch: int,
+        out_ch: int,
+        s: int = 1,
+        downsample: Optional[nn.Module] = None,
+    ) -> None:
         super().__init__()
-        
+
         self.conv1 = nn.Conv2d(in_ch, out_ch, 1, 1, 0, bias=False)
         self.bn1 = nn.BatchNorm2d(out_ch)
 
@@ -67,21 +80,31 @@ class Bottleneck(nn.Module):
 
 
 resnet_settings = {
-    '18': [BasicBlock, [2, 2, 2, 2]],
-    '34': [BasicBlock, [3, 4, 6, 3]],
-    '50': [Bottleneck, [3, 4, 6, 3]],
-    '101': [Bottleneck, [3, 4, 23, 3]],
-    '152': [Bottleneck, [3, 8, 36, 3]]
+    "18": [BasicBlock, [2, 2, 2, 2]],
+    "34": [BasicBlock, [3, 4, 6, 3]],
+    "50": [Bottleneck, [3, 4, 6, 3]],
+    "101": [Bottleneck, [3, 4, 23, 3]],
+    "152": [Bottleneck, [3, 8, 36, 3]],
 }
 
 
 class ResNet(nn.Module):
-    def __init__(self, model_name: str = '50', pretrained: str = None, num_classes: int = 1000, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        model_name: str = "50",
+        pretrained: str = None,
+        num_classes: int = 4,
+        *args,
+        **kwargs,
+    ) -> None:
         super().__init__()
         self.inplanes = 64
 
-        assert model_name in resnet_settings.keys(), f"ResNet model name should be in {list(resnet_settings.keys())}"
+        assert (
+            model_name in resnet_settings.keys()
+        ), f"ResNet model name should be in {list(resnet_settings.keys())}"
         block, layers = resnet_settings[model_name]
+        embed_dims = [64, 128, 256, 512]
 
         self.conv1 = nn.Conv2d(3, self.inplanes, 7, 2, 3, bias=False)
         self.bn1 = nn.BatchNorm2d(self.inplanes)
@@ -93,27 +116,35 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], s=2)
         self.layer4 = self._make_layer(block, 512, layers[3], s=2)
 
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        classifier_blocks = [3, 2, 1, 0]
+        self.classifiers = nn.ModuleList([])
+        for i, embed_dim in enumerate(embed_dims):
+            self.classifiers.append(
+                ClassifierModule(classifier_blocks[i], embed_dim * block.expansion, num_classes)
+            )
+
+        # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        # self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         self._init_weights(pretrained)
-
 
     def _init_weights(self, pretrained: str = None) -> None:
         if pretrained:
             try:
-                self.load_state_dict(torch.load(pretrained, map_location='cpu'))
+                self.load_state_dict(torch.load(pretrained, map_location="cpu"))
             except RuntimeError:
-                pretrained_dict = torch.load(pretrained, map_location='cpu')
-                pretrained_dict.popitem()   # remove bias
-                pretrained_dict.popitem()   # remove weight
+                pretrained_dict = torch.load(pretrained, map_location="cpu")
+                pretrained_dict.popitem()  # remove bias
+                pretrained_dict.popitem()  # remove weight
                 self.load_state_dict(pretrained_dict, strict=False)
             finally:
                 print(f"Loaded imagenet pretrained from {pretrained}")
         else:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
-                    nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                    nn.init.kaiming_normal_(
+                        m.weight, mode="fan_out", nonlinearity="relu"
+                    )
                 elif isinstance(m, nn.BatchNorm2d):
                     nn.init.constant_(m.weight, 1)
                     nn.init.constant_(m.bias, 0)
@@ -121,13 +152,18 @@ class ResNet(nn.Module):
                     nn.init.constant_(m.weight, 1)
                     nn.init.constant_(m.bias, 0)
 
-
-    def _make_layer(self, block: Type[Union[BasicBlock, Bottleneck]], planes: int, blocks: int, s: int = 1) -> nn.Sequential:
+    def _make_layer(
+        self,
+        block: Type[Union[BasicBlock, Bottleneck]],
+        planes: int,
+        blocks: int,
+        s: int = 1,
+    ) -> nn.Sequential:
         downsample = None
         if s != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
                 nn.Conv2d(self.inplanes, planes * block.expansion, 1, s, bias=False),
-                nn.BatchNorm2d(planes * block.expansion)
+                nn.BatchNorm2d(planes * block.expansion),
             )
 
         layers = []
@@ -139,24 +175,50 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-
     def forward(self, x: Tensor) -> Tensor:
+        outs = []
         x = self.maxpool(self.relu(self.bn1(self.conv1(x))))
         x = self.layer1(x)
+        outs.append(self.classifiers[0](x))
         x = self.layer2(x)
+        outs.append(self.classifiers[1](x))
         x = self.layer3(x)
+        outs.append(self.classifiers[2](x))
         x = self.layer4(x)
+        outs.append(self.classifiers[3](x))
 
-        x = self.avgpool(x)
-        x = x.flatten(1)
-        x = self.fc(x)
+        # x = self.avgpool(x)
+        # x = x.flatten(1)
+        # x = self.fc(x)
 
         return x
 
 
+class ClassifierModule(nn.Module):
+    def __init__(self, num_blocks, channel, num_classes):
+        super(ClassifierModule, self).__init__()
+        self.num_blocks = num_blocks
+        attentions = []
+        for i in range(num_blocks):
+            attentions.append(ECA(channel))
 
-if __name__ == '__main__':
-    model = ResNet('101', 'checkpoints/resnet/resnet101_a1.pth')
+        self.attentions = nn.ModuleList(attentions)
+        
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(channel, num_classes)
+
+    def forward(self, x):
+        for i in range(len(self.attentions)):
+            x = self.attentions[i](x)
+
+        x = self.avgpool(x)
+        x = x.flatten(1)
+        x = self.fc(x)
+        return x
+
+
+if __name__ == "__main__":
+    model = ResNet("50")
     x = torch.zeros(1, 3, 224, 224)
     y = model(x)
     print(y.shape)

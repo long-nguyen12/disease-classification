@@ -86,7 +86,7 @@ def test(dataloader, model, loss_fn, device):
 
     test_loss /= num_batches
     # top1_acc /= size
-    # top5_acc /= size
+    top5_acc /= size
 
     top1_acc_1 /= size
     top1_acc_2 /= size
