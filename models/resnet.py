@@ -179,13 +179,18 @@ class ResNet(nn.Module):
         outs = []
         x = self.maxpool(self.relu(self.bn1(self.conv1(x))))
         x = self.layer1(x)
-        outs.append(self.classifiers[0](x))
+        # outs.append(self.classifiers[0](x))
         x = self.layer2(x)
-        outs.append(self.classifiers[1](x))
+        # outs.append(self.classifiers[1](x))
         x = self.layer3(x)
-        outs.append(self.classifiers[2](x))
+        # outs.append(self.classifiers[2](x))
         x = self.layer4(x)
-        outs.append(self.classifiers[3](x))
+        # outs.append(self.classifiers[3](x))
+        
+        x = self.avgpool(x)
+        x = x.flatten(1)
+        x = self.fc(x)
+        outs.append(x)
         
         return outs
 
