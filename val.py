@@ -37,11 +37,14 @@ def test(dataloader, model, loss_fn, device):
     top5_acc_2 = 0
     top5_acc_3 = 0
     top5_acc_4 = 0
-
+    infer_time = 0
     with torch.no_grad():
         for X, y in dataloader:
+            start = time.time()
             X, y = X.to(device), y.to(device)
             preds = model(X)
+            end = time.gmtime(time.time() - start)
+            infer_time += end
             for i, pred in enumerate(preds):
                 test_loss += loss_fn(pred, y).item()
                 acc1, acc5 = compute_accuracy(pred, y, topk=(1, 4))
@@ -71,8 +74,10 @@ def test(dataloader, model, loss_fn, device):
     top5_acc_3 /= size
     top5_acc_4 /= size
 
+    infer_time /= size
+
     console.print(
-        f"\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
+        f"\n Average inference time: [blue]{(infer_time):>0.1f}%[/blue],\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
     )
     return top1_acc_4, top5_acc_4
 
@@ -88,16 +93,14 @@ def main(cfg: argparse.Namespace):
     num_workers = 8
 
     # dataloader
-    DiseaseDataset = DiseaseDataloader(
-        cfg.DATASET, cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
-    )
+    DiseaseDataset = DiseaseDataloader(cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers)
     trainloader, testloader = DiseaseDataset.get_data_loaders(0.8)
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
     model = model.to(device)
     state_dict = torch.load("", map_location="cpu")
     model.load_state_dict(state_dict, strict=True)
-    
+
     val_loss_fn = CrossEntropyLoss()
 
     top1_acc, top5_acc = test(testloader, model, val_loss_fn, device)
