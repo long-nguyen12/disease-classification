@@ -43,7 +43,7 @@ def test(dataloader, model, loss_fn, device):
             start = time.time()
             X, y = X.to(device), y.to(device)
             preds = model(X)
-            end = time.gmtime(time.time() - start)
+            end = time.time() - start
             infer_time += end
             for i, pred in enumerate(preds):
                 test_loss += loss_fn(pred, y).item()
