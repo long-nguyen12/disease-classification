@@ -98,13 +98,6 @@ class KvasirDataLoader(Dataset):
         print("{} images for validation.".format(len(self.val_images_path)))
 
     def get_data_loaders(self):
-
-        train_loader = DataLoader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.num_workers,
-        )
         train_dataset = MyDataSet(
             images_path=self.train_images_path,
             images_class=self.train_images_label,

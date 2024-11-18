@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torchvision.datasets import *
 
-from datasets.disease import DiseaseDataloader
+from datasets import *
 from datasets.transforms import get_train_transforms, get_val_transforms
 from models import *
 from utils.losses import CrossEntropyLoss, LabelSmoothCrossEntropy
@@ -121,10 +121,10 @@ def main(cfg: argparse.Namespace):
     num_workers = 8
 
     # dataloader
-    DiseaseDataset = DiseaseDataloader(
+    DiseaseDataset = KvasirDataLoader(
         cfg.DATASET, cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
     )
-    trainloader, testloader = DiseaseDataset.get_data_loaders(0.8)
+    trainloader, testloader = DiseaseDataset.get_data_loaders()
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
 
@@ -190,7 +190,7 @@ def main(cfg: argparse.Namespace):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cfg", type=str, default="configs/finetune.yaml")
+    parser.add_argument("--cfg", type=str, default="configs/kvasir.yaml")
     args = parser.parse_args()
     cfg = argparse.Namespace(**yaml.load(open(args.cfg), Loader=yaml.SafeLoader))
     main(cfg)
