@@ -171,7 +171,7 @@ def main(cfg: argparse.Namespace):
                 best_top5_acc = top5_acc
                 torch.save(
                     model.state_dict(),
-                    save_dir / f"{cfg.MODEL}_{cfg.VARIANT}_last.pth",
+                    save_dir / f"{cfg.DATASET_NAME}_{cfg.MODEL}_{cfg.VARIANT}_last.pth",
                 )
             console.print(
                 f" Best Top-1 Accuracy: [red]{(best_top1_acc):>0.1f}%[/red]\tBest Top-5 Accuracy: [red]{(best_top5_acc):>0.1f}%[/red]\n"
