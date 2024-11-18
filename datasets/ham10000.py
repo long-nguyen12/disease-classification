@@ -5,23 +5,27 @@ from PIL import Image
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import datasets, transforms
-
+import cv2
+import pandas as pd
 
 class SkinDataset(Dataset):
     def __init__(self, df, transform=None):
-        self.df = df
+        self.df = pd.read_csv(df)
         self.transform = transform
 
     def __len__(self):
-
         return len(self.df)
 
     def __getitem__(self, index):
+        # X = cv2.imread(self.df["path"][index])
+        # X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
 
-        X = Image.open(self.df["path"][index]).resize((64, 64))
+        X = Image.open(self.df["path"][index])
+        if X.mode != "RGB":
+            X = X.convert("RGB")
         y = torch.tensor(int(self.df["target"][index]))
-
-        if self.transform:
+        
+        if self.transform is not None:
             X = self.transform(X)
 
         return X, y
@@ -65,7 +69,7 @@ class HamDataloader(Dataset):
             num_workers=self.num_workers,
         )
         val_loader = DataLoader(
-            self.val_dataset,
+            self.test_dataset,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,

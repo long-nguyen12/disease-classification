@@ -36,7 +36,7 @@ class DiseaseDataloader(Dataset):
             root=os.path.join(self.root, "testing"), transform=self.transform
         )
 
-    def get_data_loaders(self, train_val_split):
+    def get_data_loaders(self, train_val_split=None):
         # train_size = int(train_val_split * len(self.dataset))
         # val_size = len(self.dataset) - train_size
 
