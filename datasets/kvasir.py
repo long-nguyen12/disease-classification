@@ -53,13 +53,13 @@ class KvasirDataLoader(Dataset):
             raise ValueError(f"Data directory {self.root} does not exist.")
 
         category = [
-            cls for cls in os.listdir(root) if os.path.isdir(os.path.join(root, cls))
+            cls for cls in os.listdir(os.path.join(root, "train")) if os.path.isdir(os.path.join(root, "train", cls))
         ]
         category.sort()
         class_indices = dict((k, v) for v, k in enumerate(category))
 
         self.train_images_path = []
-        train_images_label = []
+        self.train_images_label = []
 
         self.val_images_path = []
         self.val_images_label = []
