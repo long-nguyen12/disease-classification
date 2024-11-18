@@ -77,7 +77,7 @@ def test(dataloader, model, loss_fn, device):
     infer_time /= size
 
     console.print(
-        f"\n Average inference time: [blue]{(infer_time):>0.1f}%[/blue],\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
+        f"\n Average inference time: [blue]{(infer_time):>0.5f}[/blue],\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
     )
     return top1_acc_4, top5_acc_4
 
@@ -98,7 +98,7 @@ def main(cfg: argparse.Namespace):
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
     model = model.to(device)
-    state_dict = torch.load("", map_location="cpu")
+    state_dict = torch.load("output/Res2Net_50_last.pth", map_location="cpu")
     model.load_state_dict(state_dict, strict=True)
 
     val_loss_fn = CrossEntropyLoss()
