@@ -8,6 +8,7 @@ from torchvision import datasets, transforms
 import cv2
 import pandas as pd
 
+
 class SkinDataset(Dataset):
     def __init__(self, df, transform=None):
         self.df = pd.read_csv(df)
@@ -24,7 +25,7 @@ class SkinDataset(Dataset):
         if X.mode != "RGB":
             X = X.convert("RGB")
         y = torch.tensor(int(self.df["target"][index]))
-        
+
         if self.transform is not None:
             X = self.transform(X)
 
@@ -43,8 +44,8 @@ class HamDataloader(Dataset):
     ):
         self.batch_size = batch_size
         self.num_workers = num_workers
-        
-        self.transform = (
+
+        transform = (
             transform
             if transform is not None
             else transforms.Compose(
@@ -58,8 +59,8 @@ class HamDataloader(Dataset):
             )
         )
 
-        self.train_dataset = SkinDataset(train_csv, transform=self.transform)
-        self.test_dataset = SkinDataset(test_csv, transform=self.transform)
+        self.train_dataset = SkinDataset(train_csv, transform=transform)
+        self.test_dataset = SkinDataset(test_csv, transform=transform)
 
     def get_data_loaders(self):
         train_loader = DataLoader(
