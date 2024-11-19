@@ -93,11 +93,25 @@ def main(cfg: argparse.Namespace):
     num_workers = 8
 
     # dataloader
-    # DiseaseDataset = KvasirDataLoader(cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers)
     
-    DiseaseDataset = HamDataloader(
-        'data/ham10000/ham10000-train.csv', 'data/ham10000/ham10000-test.csv', cfg.BATCH_SIZE, cfg.IMAGE_SIZE, None, num_workers
-    )
+    if cfg.DATASET == "Kvasir":
+        DiseaseDataset = KvasirDataLoader(
+            cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers
+        )
+    elif cfg.DATASET == "Ham10000":
+        DiseaseDataset = HamDataloader(
+            "data/ham10000/ham10000-train.csv",
+            "data/ham10000/ham10000-test.csv",
+            1,
+            cfg.IMAGE_SIZE,
+            None,
+            num_workers,
+        )
+    else:
+        DiseaseDataset = DiseaseDataloader(
+            cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers
+        )
+        
     trainloader, testloader = DiseaseDataset.get_data_loaders()
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
@@ -120,8 +134,11 @@ def main(cfg: argparse.Namespace):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cfg", type=str, default="configs/ham10000.yaml")
-    args = parser.parse_args()
-    cfg = argparse.Namespace(**yaml.load(open(args.cfg), Loader=yaml.SafeLoader))
-    main(cfg)
+    configs = ["ham10000.yaml", "ear.yaml", "kvasir.yaml"]
+    for config in configs:
+        config_path = f"configs/{config}"
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--cfg", type=str, default=config_path)
+        args = parser.parse_args()
+        cfg = argparse.Namespace(**yaml.load(open(args.cfg), Loader=yaml.SafeLoader))
+        main(cfg)
