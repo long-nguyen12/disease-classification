@@ -94,11 +94,11 @@ def main(cfg: argparse.Namespace):
 
     # dataloader
     
-    if cfg.DATASET == "Kvasir":
+    if cfg.DATASET_NAME == "Kvasir":
         DiseaseDataset = KvasirDataLoader(
             cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers
         )
-    elif cfg.DATASET == "Ham10000":
+    elif cfg.DATASET_NAME == "Ham10000":
         DiseaseDataset = HamDataloader(
             "data/ham10000/ham10000-train.csv",
             "data/ham10000/ham10000-test.csv",
@@ -116,7 +116,9 @@ def main(cfg: argparse.Namespace):
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
     model = model.to(device)
-    state_dict = torch.load("output/Ham10000_Res2Net_50_last.pth", map_location="cpu")
+    
+    state_dict_path = f"output/{cfg.DATASET_NAME}_{cfg.MODEL}_50_last.pth"
+    state_dict = torch.load(state_dict_path, map_location="cpu")
     model.load_state_dict(state_dict, strict=True)
 
     val_loss_fn = CrossEntropyLoss()

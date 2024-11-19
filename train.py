@@ -121,11 +121,11 @@ def main(cfg: argparse.Namespace):
     num_workers = 8
 
     # dataloader
-    if cfg.DATASET == "Kvasir":
+    if cfg.DATASET_NAME == "Kvasir":
         DiseaseDataset = KvasirDataLoader(
             cfg.DATASET, cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
         )
-    elif cfg.DATASET == "Ham10000":
+    elif cfg.DATASET_NAME == "Ham10000":
         DiseaseDataset = HamDataloader(
             "data/ham10000/ham10000-train.csv",
             "data/ham10000/ham10000-test.csv",
