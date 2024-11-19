@@ -106,7 +106,7 @@ def test(dataloader, model, loss_fn, device):
     console.print(
         f"\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
     )
-    return top1_acc_4, top5_acc_4
+    return top1_acc_4, top1_acc_3, top1_acc_2, top1_acc_1, top5_acc_4
 
 
 def main(cfg: argparse.Namespace):
@@ -115,7 +115,7 @@ def main(cfg: argparse.Namespace):
     save_dir.mkdir(exist_ok=True)
     fix_seeds(42)
     setup_cudnn()
-    best_top1_acc, best_top5_acc = 0.0, 0.0
+    best_top1_acc, second_top1_acc, best_top5_acc = 0.0, 0.0, 0.0
 
     device = torch.device(cfg.DEVICE)
     num_workers = 8
@@ -125,7 +125,12 @@ def main(cfg: argparse.Namespace):
     #     cfg.DATASET, cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
     # )
     DiseaseDataset = HamDataloader(
-        'data/ham10000/ham10000-train.csv', 'data/ham10000/ham10000-test.csv', cfg.BATCH_SIZE, cfg.IMAGE_SIZE, None, num_workers
+        "data/ham10000/ham10000-train.csv",
+        "data/ham10000/ham10000-test.csv",
+        cfg.BATCH_SIZE,
+        cfg.IMAGE_SIZE,
+        None,
+        num_workers,
     )
     trainloader, testloader = DiseaseDataset.get_data_loaders()
     # initialize model and load imagenet pretrained
@@ -167,7 +172,7 @@ def main(cfg: argparse.Namespace):
         )
 
         if (epoch + 1) % cfg.EVAL_INTERVAL == 0 or (epoch + 1) == cfg.EPOCHS:
-            top1_acc, top5_acc = test(testloader, model, val_loss_fn, device)
+            top1_acc, top1_acc_2, top1_acc_3, top1_acc_4, top5_acc = test(testloader, model, val_loss_fn, device)
 
             if top1_acc > best_top1_acc:
                 best_top1_acc = top1_acc
@@ -176,6 +181,13 @@ def main(cfg: argparse.Namespace):
                     model.state_dict(),
                     save_dir / f"{cfg.DATASET_NAME}_{cfg.MODEL}_{cfg.VARIANT}_last.pth",
                 )
+            elif top1_acc == best_top1_acc and top1_acc_2 >= second_top1_acc:
+                second_top1_acc = top1_acc_2
+                torch.save(
+                    model.state_dict(),
+                    save_dir / f"{cfg.DATASET_NAME}_{cfg.MODEL}_{cfg.VARIANT}_last.pth",
+                )
+                
             console.print(
                 f" Best Top-1 Accuracy: [red]{(best_top1_acc):>0.1f}%[/red]\tBest Top-5 Accuracy: [red]{(best_top5_acc):>0.1f}%[/red]\n"
             )
