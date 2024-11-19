@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torchvision.datasets import *
 
-from datasets.disease import DiseaseDataloader
+from datasets import *
 from datasets.transforms import get_train_transforms, get_val_transforms
 from models import *
 from utils.losses import CrossEntropyLoss, LabelSmoothCrossEntropy
@@ -93,12 +93,16 @@ def main(cfg: argparse.Namespace):
     num_workers = 8
 
     # dataloader
-    DiseaseDataset = DiseaseDataloader(cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers)
-    trainloader, testloader = DiseaseDataset.get_data_loaders(0.8)
+    # DiseaseDataset = KvasirDataLoader(cfg.DATASET, 1, cfg.IMAGE_SIZE, num_workers)
+    
+    DiseaseDataset = HamDataloader(
+        'data/ham10000/ham10000-train.csv', 'data/ham10000/ham10000-test.csv', cfg.BATCH_SIZE, cfg.IMAGE_SIZE, None, num_workers
+    )
+    trainloader, testloader = DiseaseDataset.get_data_loaders()
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
     model = model.to(device)
-    state_dict = torch.load("output/Res2Net_50_last.pth", map_location="cpu")
+    state_dict = torch.load("output/Ham10000_Res2Net_50_last.pth", map_location="cpu")
     model.load_state_dict(state_dict, strict=True)
 
     val_loss_fn = CrossEntropyLoss()
@@ -117,7 +121,7 @@ def main(cfg: argparse.Namespace):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cfg", type=str, default="configs/finetune.yaml")
+    parser.add_argument("--cfg", type=str, default="configs/ham10000.yaml")
     args = parser.parse_args()
     cfg = argparse.Namespace(**yaml.load(open(args.cfg), Loader=yaml.SafeLoader))
     main(cfg)

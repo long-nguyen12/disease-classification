@@ -19,7 +19,7 @@ class SkinDataset(Dataset):
     def __getitem__(self, index):
         # X = cv2.imread(self.df["path"][index])
         # X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
-
+        
         X = Image.open(self.df["path"][index])
         if X.mode != "RGB":
             X = X.convert("RGB")

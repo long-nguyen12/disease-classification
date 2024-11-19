@@ -121,11 +121,11 @@ def main(cfg: argparse.Namespace):
     num_workers = 8
 
     # dataloader
-    # DiseaseDataset = KvasirDataLoader(
+    # DiseaseDataset = DiseaseDataloader(
     #     cfg.DATASET, cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
     # )
     DiseaseDataset = HamDataloader(
-        'data/ham10000/ham10000-train.csv', 'data/ham10000/ham10000-test.csv', cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
+        'data/ham10000/ham10000-train.csv', 'data/ham10000/ham10000-test.csv', cfg.BATCH_SIZE, cfg.IMAGE_SIZE, None, num_workers
     )
     trainloader, testloader = DiseaseDataset.get_data_loaders()
     # initialize model and load imagenet pretrained
