@@ -9,11 +9,12 @@ from rich.table import Table
 from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
+from torch.utils.data import DataLoader
 from torchvision.datasets import *
 
 from datasets import *
-from models.res2net_baseline import *
-from models.resnet_baseline import *
+from datasets.transforms import get_train_transforms, get_val_transforms
+from models import *
 from utils.losses import CrossEntropyLoss, LabelSmoothCrossEntropy
 from utils.metrics import compute_accuracy
 from utils.utils import create_progress_bar, fix_seeds, setup_cudnn
@@ -38,8 +39,9 @@ def train(dataloader, model, loss_fn, optimizer, scheduler, scaler, device, epoc
         X, y = X.to(device), y.to(device)
         loss = 0.0
         with autocast(enabled=cfg.AMP):
-            pred = model(X)
-            loss = loss_fn(pred, y)
+            preds = model(X)
+            for pred in preds:
+                loss += loss_fn(pred, y)
 
         optimizer.zero_grad()
         scaler.scale(loss).backward()
@@ -58,23 +60,53 @@ def test(dataloader, model, loss_fn, device):
     num_batches = len(dataloader)
     test_loss, top1_acc, top5_acc = 0, 0, 0
 
+    top1_acc_1 = 0
+    top1_acc_2 = 0
+    top1_acc_3 = 0
+    top1_acc_4 = 0
+
+    top5_acc_1 = 0
+    top5_acc_2 = 0
+    top5_acc_3 = 0
+    top5_acc_4 = 0
+
     with torch.no_grad():
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
-            pred = model(X)
-            test_loss += loss_fn(pred, y).item()
-            acc1, acc5 = compute_accuracy(pred, y, topk=(1, 4))
-            top1_acc += acc1 * X.shape[0]
-            top5_acc += acc5 * X.shape[0]
+            preds = model(X)
+            for i, pred in enumerate(preds):
+                test_loss += loss_fn(pred, y).item()
+                acc1, acc5 = compute_accuracy(pred, y, topk=(1, 4))
+
+                if i + 1 == 1:
+                    top1_acc_1 += acc1 * X.shape[0]
+                    top5_acc_1 += acc5 * X.shape[0]
+                elif i + 1 == 2:
+                    top1_acc_2 += acc1 * X.shape[0]
+                    top5_acc_2 += acc5 * X.shape[0]
+                elif i + 1 == 3:
+                    top1_acc_3 += acc1 * X.shape[0]
+                    top5_acc_3 += acc5 * X.shape[0]
+                else:
+                    top1_acc_4 += acc1 * X.shape[0]
+                    top5_acc_4 += acc5 * X.shape[0]
 
     test_loss /= num_batches
-    top1_acc /= size
-    top5_acc /= size
-    console.print(
-        f"\n Top-1 Accuracy: [blue]{(top1_acc):>0.1f}%[/blue],\tTop-5 Accuracy: [blue]{(top5_acc):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
-    )
 
-    return top1_acc, top5_acc
+    top1_acc_1 /= size
+    top1_acc_2 /= size
+    top1_acc_3 /= size
+    top1_acc_4 /= size
+
+    top5_acc_1 /= size
+    top5_acc_2 /= size
+    top5_acc_3 /= size
+    top5_acc_4 /= size
+
+    console.print(
+        f"\n Top-1 Exit-1 Accuracy: [blue]{(top1_acc_1):>0.1f}%[/blue],\n Top-1 Exit-2 Accuracy: [blue]{(top1_acc_2):>0.1f}%[/blue],\n Top-1 Exit-3 Accuracy: [blue]{(top1_acc_3):>0.1f}%[/blue],\n Top-1 Exit-4 Accuracy: [blue]{(top1_acc_4):>0.1f}%[/blue],\tAvg Loss: [blue]{test_loss:>8f}[/blue]"
+    )
+    return top1_acc_4, top1_acc_3, top1_acc_2, top1_acc_1, top5_acc_4
 
 
 def main(cfg: argparse.Namespace):
@@ -106,7 +138,7 @@ def main(cfg: argparse.Namespace):
         DiseaseDataset = DiseaseDataloader(
             cfg.DATASET, cfg.BATCH_SIZE, cfg.IMAGE_SIZE, num_workers
         )
-
+        
     trainloader, testloader = DiseaseDataset.get_data_loaders()
     # initialize model and load imagenet pretrained
     model = eval(cfg.MODEL)(cfg.VARIANT, cfg.PRETRAINED, cfg.CLASSES, cfg.IMAGE_SIZE)
@@ -147,11 +179,19 @@ def main(cfg: argparse.Namespace):
         )
 
         if (epoch + 1) % cfg.EVAL_INTERVAL == 0 or (epoch + 1) == cfg.EPOCHS:
-            top1_acc, top5_acc = test(testloader, model, val_loss_fn, device)
+            top1_acc, top1_acc_2, top1_acc_3, top1_acc_4, top5_acc = test(
+                testloader, model, val_loss_fn, device
+            )
 
             if top1_acc > best_top1_acc:
                 best_top1_acc = top1_acc
                 best_top5_acc = top5_acc
+                torch.save(
+                    model.state_dict(),
+                    save_dir / f"{cfg.DATASET_NAME}_{cfg.MODEL}_{cfg.VARIANT}_last.pth",
+                )
+            elif top1_acc == best_top1_acc and top1_acc_2 >= second_top1_acc:
+                second_top1_acc = top1_acc_2
                 torch.save(
                     model.state_dict(),
                     save_dir / f"{cfg.DATASET_NAME}_{cfg.MODEL}_{cfg.VARIANT}_last.pth",
